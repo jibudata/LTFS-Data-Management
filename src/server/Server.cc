@@ -412,6 +412,7 @@ void Server::run(sigset_t set)
     }
     //! [read the configuration file]
 
+    MSG(LTFSDMX0029I, " inventory ");
     try {
         //! [inventorize]
         inventory = new LTFSDMInventory();
@@ -425,6 +426,7 @@ void Server::run(sigset_t set)
         goto end;
     }
 
+    MSG(LTFSDMX0029I, " thread pool ");
     //! [thread pool for stubbing]
     Server::wqs = new ThreadPool<Migration::mig_info_t,
             std::shared_ptr<std::list<unsigned long>>, FsObj::file_state>(
@@ -432,9 +434,13 @@ void Server::run(sigset_t set)
             "stub1-wq");
     //! [thread pool for stubbing]
 
+    MSG(LTFSDMX0029I, " Scheduler::run ");
     subs.enqueue("Scheduler", &Scheduler::run, &sched, key);
+    MSG(LTFSDMX0029I, " Server::signalHandler ");
     subs.enqueue("SigHandler", &Server::signalHandler, set, key);
+    MSG(LTFSDMX0029I, " Receiver::run ");
     subs.enqueue("Receiver", &Receiver::run, &recv, key, connector);
+    MSG(LTFSDMX0029I, " TransRecall::run ");
     subs.enqueue("RecallD", &TransRecall::run, &trec, connector);
 
     subs.waitAllRemaining();

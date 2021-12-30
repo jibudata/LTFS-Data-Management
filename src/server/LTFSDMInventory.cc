@@ -63,6 +63,7 @@ void LTFSDMInventory::getNode()
 {
     node = boost::shared_ptr<LTFSNode>();
 
+    /*
     if (sess && sess->is_alived()) {
         try {
             std::list<boost::shared_ptr<LTFSNode> > node_list;
@@ -82,6 +83,7 @@ void LTFSDMInventory::getNode()
             node = boost::shared_ptr<LTFSNode>();
         }
     }
+    */
 }
 
 boost::shared_ptr<Drive> LTFSDMInventory::lookupDrive(std::string id,
@@ -89,6 +91,7 @@ bool force)
 {
     boost::shared_ptr<Drive> drive = boost::shared_ptr<Drive>();
 
+    /*
     if (sess && sess->is_alived()) {
         std::string type = "drive (" + id + ")";
         MSG(LTFSDML0007I, type.c_str(), sess->get_server().c_str(),
@@ -109,7 +112,7 @@ bool force)
                     if (ie.GetID() != "031E") {
                         throw(ie);
                     }
-                    /* Just ignore 0-byte ID objects */
+                    // Just ignore 0-byte ID objects
                 }
             }
             if (!drive)
@@ -122,12 +125,14 @@ bool force)
             drive = boost::shared_ptr<Drive>();
         }
     }
+    */
 
     return drive;
 }
 
 void LTFSDMInventory::addDrive(std::string serial)
 {
+    /*
     if (sess && sess->is_alived()) {
         std::string type = "drive (" + serial + ")";
         MSG(LTFSDML0012I, type.c_str(), sess->get_server().c_str(),
@@ -135,7 +140,7 @@ void LTFSDMInventory::addDrive(std::string serial)
         try {
             boost::shared_ptr<Drive> d = lookupDrive(serial);
             if (!d) {
-                /* Refresh inventory and retry */
+                // Refresh inventory and retry
                 d = lookupDrive(serial);
             }
 
@@ -156,10 +161,12 @@ void LTFSDMInventory::addDrive(std::string serial)
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 void LTFSDMInventory::remDrive(boost::shared_ptr<Drive> drive)
 {
+    /*
     if (drive) {
         std::string type = "drive (" + drive->GetObjectID() + ")";
         MSG(LTFSDML0014I, type.c_str(), sess->get_server().c_str(),
@@ -185,12 +192,14 @@ void LTFSDMInventory::remDrive(boost::shared_ptr<Drive> drive)
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 void LTFSDMInventory::lookupDrives(bool assigned_only, bool force)
 {
     std::list<boost::shared_ptr<Drive> > drvs;
 
+    /*
     if (sess && sess->is_alived()) {
         try {
             if (assigned_only) {
@@ -229,6 +238,7 @@ void LTFSDMInventory::lookupDrives(bool assigned_only, bool force)
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 boost::shared_ptr<Cartridge> LTFSDMInventory::lookupCartridge(std::string id,
@@ -236,6 +246,7 @@ bool force)
 {
     boost::shared_ptr<Cartridge> cart = boost::shared_ptr<Cartridge>();
 
+    /*
     if (sess && sess->is_alived()) {
         std::string type = "tape (" + id + ")";
         MSG(LTFSDML0007I, type.c_str(), sess->get_server().c_str(),
@@ -258,6 +269,7 @@ bool force)
             cart = boost::shared_ptr<Cartridge>();
         }
     }
+    */
 
     return cart;
 }
@@ -265,6 +277,7 @@ bool force)
 void LTFSDMInventory::addCartridge(std::string barcode,
         std::string drive_serial)
 {
+    /*
     if (sess && sess->is_alived()) {
         std::string type = "tape (" + barcode + ")";
         MSG(LTFSDML0012I, type.c_str(), sess->get_server().c_str(),
@@ -272,19 +285,19 @@ void LTFSDMInventory::addCartridge(std::string barcode,
         try {
             boost::shared_ptr<Cartridge> cart = lookupCartridge(barcode);
             if (!cart) {
-                /* Refresh inventory and retry */
+                // Refresh inventory and retry
                 cart = lookupCartridge(barcode);
             }
 
             if (cart)
                 cart->Add();
 
-            /* Refresh inventory and mount if it is UNKNOWN status */
+            // Refresh inventory and mount if it is UNKNOWN status 
             cart = lookupCartridge(barcode);
             if (cart) {
                 if (drive_serial.length()
                         && cart->get_status().compare("NOT_MOUNTED_YET") == 0) {
-                    //StatusConv::get_cart_value(c->get_status()) == "NOT_MOUNTED_YET" ) {  /* needs to be checked */
+                    //StatusConv::get_cart_value(c->get_status()) == "NOT_MOUNTED_YET" ) {  // needs to be checked
                     cart->Mount(drive_serial);
                     cart->Unmount();
                 }
@@ -304,11 +317,13 @@ void LTFSDMInventory::addCartridge(std::string barcode,
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 void LTFSDMInventory::remCartridge(boost::shared_ptr<Cartridge> cart,
 bool keep_on_drive)
 {
+    /*
     if (cart) {
         if (sess && sess->is_alived()) {
             std::string type = "tape (" + cart->GetObjectID() + ")";
@@ -336,12 +351,14 @@ bool keep_on_drive)
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 void LTFSDMInventory::lookupCartridges(bool assigned_only, bool force)
 {
     std::list<boost::shared_ptr<Cartridge>> crts;
 
+    /*
     if (sess && sess->is_alived()) {
         try {
             if (assigned_only) {
@@ -382,11 +399,13 @@ void LTFSDMInventory::lookupCartridges(bool assigned_only, bool force)
     }
 
     THROW(Error::GENERAL_ERROR);
+    */
 }
 
 void LTFSDMInventory::updateCartridge(std::string tapeId)
 
 {
+    /*
     if (sess && sess->is_alived()) {
         try {
             std::lock_guard<std::recursive_mutex> lock(LTFSDMInventory::mtx);
@@ -418,6 +437,7 @@ void LTFSDMInventory::updateCartridge(std::string tapeId)
             MSG(LTFSDMS0108E, tapeId, e.what());
         }
     }
+    */
 }
 
 void LTFSDMInventory::inventorize()
@@ -429,6 +449,7 @@ void LTFSDMInventory::inventorize()
 
     std::lock_guard<std::recursive_mutex> lock(LTFSDMInventory::mtx);
 
+    MSG(LTFSDMX0029I, " drives ");
     for (std::shared_ptr<LTFSDMDrive> d : drives) {
         if (d->isBusy() == true) {
             MSG(LTFSDMS0103I, d->get_le()->GetObjectID());
@@ -442,14 +463,18 @@ void LTFSDMInventory::inventorize()
     drives.clear();
     cartridges.clear();
 
+    MSG(LTFSDMX0029I, " lookupDrives ");
     lookupDrives();
 
+    MSG(LTFSDMX0029I, " lookupCartridges ");
     lookupCartridges();
 
+    MSG(LTFSDMX0029I, " sort ");
     cartridges.sort(
             [] (const std::shared_ptr<LTFSDMCartridge> c1, const std::shared_ptr<LTFSDMCartridge> c2)
             {   return (c1->get_le()->GetObjectID().compare(c2->get_le()->GetObjectID()) < 0);});
 
+    MSG(LTFSDMX0029I, " pools ");
     for (std::string poolname : Server::conf.getPools()) {
         for (std::string cartridgeid : Server::conf.getPool(poolname)) {
             if (getCartridge(cartridgeid) == nullptr) {
@@ -465,6 +490,7 @@ void LTFSDMInventory::inventorize()
         }
     }
 
+    MSG(LTFSDMX0029I, " cartridges ");
     for (std::shared_ptr<LTFSDMCartridge> c : cartridges) {
         c->setState(LTFSDMCartridge::TAPE_UNMOUNTED);
         for (std::shared_ptr<LTFSDMDrive> d : drives) {
@@ -485,6 +511,7 @@ void LTFSDMInventory::inventorize()
         }
     }
 
+    MSG(LTFSDMX0029I, " drives ");
     for (std::shared_ptr<LTFSDMDrive> drive : drives) {
         std::stringstream threadName;
         threadName << "pmig" << i++ << "-wq";
@@ -505,6 +532,7 @@ LTFSDMInventory::LTFSDMInventory()
     struct stat statbuf;
     struct statfs statfsbuf;
 
+/*
     try {
         connect(Const::LTFSLE_HOST, Const::LTFSLE_PORT);
     } catch (const std::exception& e) {
@@ -517,8 +545,10 @@ LTFSDMInventory::LTFSDMInventory()
         MSG(LTFSDMS0072E);
         THROW(Error::GENERAL_ERROR);
     }
+    */
 
     try {
+        MSG(LTFSDMX0029I, " getNode ");
         getNode();
     } catch (const std::exception& e) {
         TRACE(Trace::error, e.what());
@@ -527,7 +557,7 @@ LTFSDMInventory::LTFSDMInventory()
     }
 
     try {
-        mountPoint = node->get_mount_point();
+        mountPoint = "/weed/fuse";//node->get_mount_point();
     } catch (const std::exception& e) {
         TRACE(Trace::error, e.what());
         MSG(LTFSDMS0072E);
@@ -536,11 +566,13 @@ LTFSDMInventory::LTFSDMInventory()
 
     TRACE(Trace::always, mountPoint);
 
+    MSG(LTFSDMX0029I, " stat ");
     if (stat(mountPoint.c_str(), &statbuf) == -1) {
         MSG(LTFSDMS0072E);
         THROW(Error::GENERAL_ERROR, errno);
     }
 
+    MSG(LTFSDMX0029I, " statfs ");
     if (statfs(mountPoint.c_str(), &statfsbuf) == -1) {
         MSG(LTFSDMS0072E);
         THROW(Error::GENERAL_ERROR, errno);
@@ -548,12 +580,15 @@ LTFSDMInventory::LTFSDMInventory()
 
     blockSize = statfsbuf.f_bsize;
 
+    /*
     if (node == nullptr) {
         MSG(LTFSDMS0072E);
         THROW(Error::GENERAL_ERROR);
     }
+    */
 
     try {
+        MSG(LTFSDMX0029I, " inventorize ");
         inventorize();
     } catch (const std::exception& e) {
         TRACE(Trace::error, e.what());

@@ -15,4 +15,4 @@
  *
  *******************************************************************************/
 #pragma once
-#define LTFSDM_VERSION "0.4.772-rhel7-protobuf.2018-06-21T14:09:34"
+#define LTFSDM_VERSION "0.4.780-workaround.2021-12-30T14:19:29"
