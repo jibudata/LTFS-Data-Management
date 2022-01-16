@@ -15,4 +15,4 @@
  *
  *******************************************************************************/
 #pragma once
-#define LTFSDM_VERSION "0.4.780-workaround.2021-12-30T14:19:29"
+#define LTFSDM_VERSION "0.4.781-workaround.2022-01-16T15:32:01"
