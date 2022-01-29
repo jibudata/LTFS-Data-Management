@@ -1,4 +1,4 @@
-# Copyright 2017 IBM Corp. All Rights Reserved.
+# Copyright 2022 Jibu Tech. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,41 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-msgdefs.h
-messages.dox
-*~
-*.o
-src/communication/test
-bin/msgcompiler
-src/messages/msgcompiler
-ltfstest
-lib/*
-ltfsdm
-ltfsdmd
-msgdefs.cc
-runtest
-ltfsdm.pb.cc
-ltfsdm.pb.h
-.d
-.DS_Store
-TAGS
-TAGS.func
-cscope.files
-cscope.out
-*.dSYM/
-src/communication/client
-src/communication/server
-bin
-src/connector/fuse/ltfsdmd.ofs
-~*.docx
-~*.pptx
-*.so
-src/common/Version.h
-.doxy-version
-.version
-.settings
-.cproject
-.project
-/latex/
-/html/
-*swp
+
+RELPATH = ../../..
+
+LDFLAGS := -lprotobuf -lfuse -lpthread -luuid -lblkid -lmount
+SHAREDLIB := lib$(notdir $(CURDIR))connector.so
+
+SO_SRC_FILES := Connector.cc FsObj.cc
+ARC_SRC_FILES := Connector.cc FsObj.cc
+CLEANUP_FILES := $(SHAREDLIB)
+BINARY := $(SHAREDLIB)
+POSTTARGET :=
+
+ARCHIVES := $(RELPATH)/lib/connector.a $(RELPATH)/lib/communication.a $(RELPATH)/lib/common.a
+
+include $(RELPATH)/definitions.mk

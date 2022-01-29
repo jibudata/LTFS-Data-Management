@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2018 IBM Corp. All Rights Reserved.
+ * Copyright 2022 Jibu Tech. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,5 +14,13 @@
  * limitations under the License.
  *
  *******************************************************************************/
-#pragma once
-#define LTFSDM_VERSION "0.4.782-fuse-rm.2022-01-29T21:01:37"
+
+
+struct FileHandle
+{
+    char mountpoint[PATH_MAX];
+    char filepath[PATH_MAX];
+    unsigned long fsid_h;
+    unsigned long fsid_l;
+    int fd;
+};

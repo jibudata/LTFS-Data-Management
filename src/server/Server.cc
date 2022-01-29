@@ -396,7 +396,7 @@ void Server::run(sigset_t set)
     SubServer subs;
     Scheduler sched;
     Receiver recv;
-    TransRecall trec;
+    //TransRecall trec;
     std::shared_ptr<Connector> connector(nullptr);
 
     Server::terminate = false;
@@ -435,7 +435,7 @@ void Server::run(sigset_t set)
     subs.enqueue("Scheduler", &Scheduler::run, &sched, key);
     subs.enqueue("SigHandler", &Server::signalHandler, set, key);
     subs.enqueue("Receiver", &Receiver::run, &recv, key, connector);
-    subs.enqueue("RecallD", &TransRecall::run, &trec, connector);
+    //subs.enqueue("RecallD", &TransRecall::run, &trec, connector);
 
     subs.waitAllRemaining();
 

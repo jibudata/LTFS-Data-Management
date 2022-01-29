@@ -18,7 +18,7 @@ COMMON := src/common
 CLIENT := src/client
 SERVER := src/server
 
-CONNECTOR := src/connector/fuse
+CONNECTOR := src/connector/file
 ifneq ($(wildcard /usr/include/xfs/dmapi.h),)
     CONNECTOR += src/connector/dmapi
 endif

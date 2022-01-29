@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2018 IBM Corp. All Rights Reserved.
+ * Copyright 2022 Jibu Tech. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,4 +15,9 @@
  *
  *******************************************************************************/
 #pragma once
-#define LTFSDM_VERSION "0.4.782-fuse-rm.2022-01-29T21:01:37"
+
+namespace FileConnector
+{
+extern std::mutex mtx;
+extern std::vector<std::string> managedFss;
+}

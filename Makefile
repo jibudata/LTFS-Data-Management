@@ -21,8 +21,8 @@ export PATH := $(PATH):$(CURDIR)/bin
 
 export ROOTDIR := $(CURDIR)
 
-export CONNECTOR_TYPE := fuse
-fuse: CONNECTOR_TYPE = fuse
+export CONNECTOR_TYPE := file
+fuse: CONNECTOR_TYPE = file
 fuse: build
 dmapi: CONNECTOR_TYPE = dmapi
 dmapi: build
