@@ -24,3 +24,22 @@ struct FileHandle
     unsigned long fsid_l;
     int fd;
 };
+
+//! [migration state attribute]
+struct mig_state_attr_t
+{
+    unsigned long typeId;
+    enum state_num
+    {
+        RESIDENT = 0,
+        IN_MIGRATION = 1,
+        PREMIGRATED = 2,
+        STUBBING = 3,
+        MIGRATED = 4,
+        IN_RECALL = 5
+    } state;
+    unsigned long size;
+    struct timespec atime;
+    struct timespec mtime;
+    struct timespec changed;
+};
