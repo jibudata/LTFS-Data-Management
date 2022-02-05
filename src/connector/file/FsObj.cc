@@ -43,8 +43,7 @@
 #include "src/connector/file/FileHandle.h"
 #include "src/connector/Connector.h"
 
-// Get rid of build failure
-static FileSystems fss;
+// static functions define
 static mig_state_attr_t getMigInfoAt(int fd);
 static void setMigInfoAt(int fd, mig_state_attr_t::state_num state);
 static void getUUID(std::string fsName, uuid_t *uuid);
@@ -172,7 +171,6 @@ FsObj::FsObj(std::string fileName)
 {
     FileHandle *fh = new FileHandle();
     struct stat stbuf;
-    uuid_t uuid;
 
     if (::stat(fileName.c_str(), &stbuf) == -1) {
         TRACE(Trace::error, errno);
@@ -182,7 +180,7 @@ FsObj::FsObj(std::string fileName)
         strncpy(fh->mountpoint, fileName.c_str(), PATH_MAX - 1);
         fh->fd = Const::UNSET;
     } else {
-        // See if file path is under one mount point
+        // Not directory, See if file path is under one mount point
         strncpy(fh->filepath, fileName.c_str(), PATH_MAX - 1);
         for (auto mpath: FileConnector::managedFss) {
             if (fileName.compare(0, mpath.size(), mpath) == 0) {
@@ -199,14 +197,6 @@ FsObj::FsObj(std::string fileName)
             }
         }
     }
-
-    try {
-        getUUID(fileName, &uuid);
-    } catch (const std::exception& e) {
-        THROW(Error::GENERAL_ERROR, fileName, 0);
-    }
-    fh->fsid_h = be64toh(*(unsigned long *) &uuid[0]);
-    fh->fsid_l = be64toh(*(unsigned long *) &uuid[8]);
 
     handle = (void *) fh;
     handleLength = fileName.size();
@@ -246,6 +236,10 @@ bool FsObj::isFsManaged()
 void FsObj::manageFs(bool setDispo, struct timespec starttime)
 {
     FileHandle *fh = (FileHandle *) handle;
+    FileSystems fss;
+    uuid_t uuid;
+    FileSystems::fsinfo fs;
+
     TRACE(Trace::always, fh->mountpoint);
 
     for (auto fs: FileConnector::managedFss) {
@@ -253,6 +247,27 @@ void FsObj::manageFs(bool setDispo, struct timespec starttime)
             return;
         }
     }
+
+    try {
+        fs = fss.getByTarget(fh->mountpoint);
+    } catch (const std::exception& e) {
+        TRACE(Trace::error, e.what());
+        MSG(LTFSDMS0080E, fh->mountpoint);
+        THROW(Error::GENERAL_ERROR);
+    }
+
+    Connector::conf->addFs(fs);
+
+    TRACE(Trace::always, fs.source);
+
+    try {
+        getUUID(fs.source, &uuid);
+    } catch (const std::exception& e) {
+        THROW(Error::GENERAL_ERROR, fs.source, 0);
+    }
+    fh->fsid_h = be64toh(*(unsigned long *) &uuid[0]);
+    fh->fsid_l = be64toh(*(unsigned long *) &uuid[8]);
+
     std::unique_lock<std::mutex> lock(FileConnector::mtx);
     FileConnector::managedFss.push_back(fh->mountpoint);
 }
