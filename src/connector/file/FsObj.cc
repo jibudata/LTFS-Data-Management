@@ -172,19 +172,24 @@ FsObj::FsObj(std::string fileName)
     FileHandle *fh = new FileHandle();
     struct stat stbuf;
 
+    fh->fd = Const::UNSET;
+
     if (::stat(fileName.c_str(), &stbuf) == -1) {
         TRACE(Trace::error, errno);
         THROW(Error::GENERAL_ERROR, fileName, errno);
     }
     if (S_ISDIR(stbuf.st_mode)) {
         strncpy(fh->mountpoint, fileName.c_str(), PATH_MAX - 1);
-        fh->fd = Const::UNSET;
     } else {
         // Not directory, See if file path is under one mount point
+        fh->fd = Const::UNSET;
+        TRACE(Trace::always, FileConnector::managedFss.size(), fileName.c_str());
         strncpy(fh->filepath, fileName.c_str(), PATH_MAX - 1);
         for (auto mpath: FileConnector::managedFss) {
+            TRACE(Trace::always, mpath, fileName.c_str());
             if (fileName.compare(0, mpath.size(), mpath) == 0) {
                 fh->fd = open(fileName.c_str(), O_RDWR);
+                TRACE(Trace::always, fh->fd, fileName.c_str());
                 if (fh->fd == -1) {
                     delete (fh);
                     TRACE(Trace::error, errno);
@@ -220,6 +225,7 @@ bool FsObj::isFsManaged()
     FileHandle *fh = (FileHandle *) handle;
     std::unique_lock<std::mutex> lock(FileConnector::mtx);
     std::set<std::string> fss;
+    bool inConf;
 
     if (Connector::conf == nullptr)
         return false;
@@ -229,8 +235,18 @@ bool FsObj::isFsManaged()
     if (fss.find(fh->mountpoint) == fss.end())
         return false;
     else
-        return true;
+        inConf = true;
 
+    if (inConf) {
+        for (auto fsName: FileConnector::managedFss) {
+            if (fsName.compare(fh->mountpoint) == 0) {
+                return true;
+            }
+        }
+    }
+
+    // Only in configure file, not in managedFss vector
+    return false;
 }
 
 void FsObj::manageFs(bool setDispo, struct timespec starttime)
@@ -239,13 +255,22 @@ void FsObj::manageFs(bool setDispo, struct timespec starttime)
     FileSystems fss;
     uuid_t uuid;
     FileSystems::fsinfo fs;
+    std::set<std::string> fsset;
 
     TRACE(Trace::always, fh->mountpoint);
 
-    for (auto fs: FileConnector::managedFss) {
-        if (fs.compare(fh->mountpoint) == 0) {
+    for (auto fsName: FileConnector::managedFss) {
+        if (fsName.compare(fh->mountpoint) == 0) {
             return;
         }
+    }
+
+    std::unique_lock<std::mutex> lock(FileConnector::mtx);
+    FileConnector::managedFss.push_back(fh->mountpoint);
+
+    fsset = Connector::conf->getFss();
+    if (fsset.find(fh->mountpoint) == fsset.end()) {
+        Connector::conf->addFs(fs);
     }
 
     try {
@@ -256,8 +281,6 @@ void FsObj::manageFs(bool setDispo, struct timespec starttime)
         THROW(Error::GENERAL_ERROR);
     }
 
-    Connector::conf->addFs(fs);
-
     TRACE(Trace::always, fs.source);
 
     try {
@@ -265,11 +288,9 @@ void FsObj::manageFs(bool setDispo, struct timespec starttime)
     } catch (const std::exception& e) {
         THROW(Error::GENERAL_ERROR, fs.source, 0);
     }
+
     fh->fsid_h = be64toh(*(unsigned long *) &uuid[0]);
     fh->fsid_l = be64toh(*(unsigned long *) &uuid[8]);
-
-    std::unique_lock<std::mutex> lock(FileConnector::mtx);
-    FileConnector::managedFss.push_back(fh->mountpoint);
 }
 
 struct stat FsObj::stat()
@@ -304,6 +325,8 @@ fuid_t FsObj::getfuid()
 
     fuid.fsid_h = fh->fsid_h;
     fuid.fsid_l = fh->fsid_l;
+
+    TRACE(Trace::always, fh->fd);
 
     if (ioctl(fh->fd, FS_IOC_GETVERSION, &fuid.igen) == -1) {
         TRACE(Trace::error, errno);
