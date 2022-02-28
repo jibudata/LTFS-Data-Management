@@ -269,16 +269,17 @@ void FsObj::manageFs(bool setDispo, struct timespec starttime)
     FileConnector::managedFss.push_back(fh->mountpoint);
 
     fsset = Connector::conf->getFss();
+    // Add the fs to config file
     if (fsset.find(fh->mountpoint) == fsset.end()) {
+        try {
+            // Get the filesystem info
+            fs = fss.getByTarget(fh->mountpoint);
+        } catch (const std::exception& e) {
+            TRACE(Trace::error, e.what());
+            MSG(LTFSDMS0080E, fh->mountpoint);
+            THROW(Error::GENERAL_ERROR);
+        }
         Connector::conf->addFs(fs);
-    }
-
-    try {
-        fs = fss.getByTarget(fh->mountpoint);
-    } catch (const std::exception& e) {
-        TRACE(Trace::error, e.what());
-        MSG(LTFSDMS0080E, fh->mountpoint);
-        THROW(Error::GENERAL_ERROR);
     }
 
     TRACE(Trace::always, fs.source);
