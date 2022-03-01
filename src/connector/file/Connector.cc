@@ -52,6 +52,20 @@ Connector::Connector(bool _cleanup, Configuration *_conf) :
     conf = _conf;
 }
 
+void Connector::InitializeManagedFs()
+{
+    FileSystems fss;
+    std::set<std::string> fsset;
+
+    // Add fs from conf file to managedFss
+    fsset = Connector::conf->getFss();
+    std::unique_lock<std::mutex> lock(FileConnector::mtx);
+    for (auto fs: fsset) {
+        TRACE(Trace::always, fs);
+        FileConnector::managedFss.push_back(fs);
+    }
+}
+
 Connector::~Connector()
 {
     if (cleanup) {

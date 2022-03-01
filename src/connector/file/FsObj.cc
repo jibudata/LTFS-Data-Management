@@ -171,6 +171,7 @@ FsObj::FsObj(std::string fileName)
 {
     FileHandle *fh = new FileHandle();
     struct stat stbuf;
+    bool found = false;
 
     fh->fd = Const::UNSET;
 
@@ -195,12 +196,15 @@ FsObj::FsObj(std::string fileName)
                     TRACE(Trace::error, errno);
                     THROW(Error::GENERAL_ERROR, fileName, errno);
                 }
-            } else {
-                // Not managed
-                delete (fh);
-                THROW(Error::FILE_FROM_UNMANAGED_MP, fileName, 0);
+                found = true;
             }
         }
+    }
+
+    if (!found) {
+        // Not managed
+        delete (fh);
+        THROW(Error::FILE_FROM_UNMANAGED_MP, fileName, 0);
     }
 
     handle = (void *) fh;

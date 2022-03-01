@@ -230,6 +230,10 @@ Connector::~Connector()
 	}
 }
 
+void Connector::InitializeManagedFs()
+{
+}
+
 void recoverDisposition()
 
 {

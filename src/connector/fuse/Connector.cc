@@ -320,6 +320,10 @@ Connector::Connector(bool _cleanup, Configuration *_conf) :
     conf = _conf;
 }
 
+void Connector::InitializeManagedFs()
+{
+}
+
 Connector::~Connector()
 
 {

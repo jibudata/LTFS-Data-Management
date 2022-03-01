@@ -217,6 +217,7 @@ public:
 
     Connector(bool _cleanup, Configuration *_conf = nullptr);
     ~Connector();
+    void InitializeManagedFs();
     struct timespec getStartTime()
     {
         return starttime;

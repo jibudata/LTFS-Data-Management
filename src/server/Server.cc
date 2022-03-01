@@ -419,6 +419,7 @@ void Server::run(sigset_t set)
         //! [connector]
         connector = std::shared_ptr<Connector>(
                 new Connector(true, &Server::conf));
+        connector->InitializeManagedFs();
         //! [connector]
     } catch (const std::exception& e) {
         TRACE(Trace::error, e.what());
