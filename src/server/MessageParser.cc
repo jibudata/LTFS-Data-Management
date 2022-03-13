@@ -597,6 +597,76 @@ void MessageParser::addMessage(long key, LTFSDmCommServer *command,
     }
 }
 
+void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
+
+{
+    TRACE(Trace::always, __PRETTY_FUNCTION__);
+    const LTFSDmProtocol::LTFSDmInfoFilesRequest infofilereq = command->infofilesrequest();
+    long keySent = infofilereq.key();
+    std::string file_name = infofilereq.filename();
+
+    int64_t migstate = -1;
+    uint64_t filesize = 0;
+    uint64_t fileblock = 0;
+    std::string tapeid = "";
+    struct stat statbuf;
+    FsObj::mig_target_attr_t attr;
+    std::stringstream tapeIds;
+
+    TRACE(Trace::normal, keySent);
+
+    if (key != keySent) {
+        MSG(LTFSDMS0008E, keySent);
+        return;
+    }
+
+    try {
+        FsObj fso(file_name);
+        statbuf = fso.stat();
+        attr = fso.getAttribute();
+        tapeIds.str("");
+        tapeIds.clear();
+        if (attr.copies == 0) {
+            tapeIds << "-";
+        } else {
+            for (int i = 0; i < attr.copies; i++) {
+                if (i != 0)
+                    tapeIds << ",";
+                tapeIds << attr.tapeInfo[i].tapeId;
+            }
+        }
+        filesize = statbuf.st_size;
+        fileblock = statbuf.st_blocks;
+        tapeid = tapeIds.str();
+        if (!S_ISREG(statbuf.st_mode)) {
+            TRACE(Trace::error, file_name, "not a regular file");
+        } else {
+            migstate = fso.getMigState();
+        }
+    } catch (const std::exception& e) {
+        if (stat(file_name.c_str(), &statbuf) == -1) {
+            //free(file_name);
+        }
+        filesize = statbuf.st_size;
+        fileblock = statbuf.st_blocks;
+        TRACE(Trace::error, e.what());
+    }
+
+    LTFSDmProtocol::LTFSDmInfoFilesResp *infofilesresp = command->mutable_infofilesresp();
+
+    infofilesresp->set_migstate(migstate);
+    infofilesresp->set_size(filesize);
+    infofilesresp->set_block(fileblock);
+    infofilesresp->set_tapeid(tapeid);
+    infofilesresp->set_filename(file_name);
+
+    try {
+        command->send();
+    } catch (const std::exception& e) {
+        MSG(LTFSDMS0007E);
+    }
+}
+
 void MessageParser::infoRequestsMessage(long key, LTFSDmCommServer *command,
         long localReqNumber)
 
@@ -1337,6 +1407,8 @@ void MessageParser::run(long key, LTFSDmCommServer command,
                     infoPoolsMessage(key, &command);
                 } else if (command.has_retrieverequest()) {
                     retrieveMessage(key, &command);
+                } else if (command.has_infofilesrequest()) {
+                    infoFilesMessage(key, &command);
                 } else {
                     TRACE(Trace::error, "unkown command\n");
                 }

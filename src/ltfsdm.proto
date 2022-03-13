@@ -242,6 +242,19 @@ message LTFSDmTransRecResp {
 	bool success =1;
 }
 
+message LTFSDmInfoFilesRequest {
+	uint64 key = 1;
+	bytes filename = 2;
+}
+
+message LTFSDmInfoFilesResp {
+	int64 migstate = 1;
+	uint64 size = 2;
+	uint64 block = 3;
+	bytes tapeid = 4;
+	bytes filename = 5; 
+}
+
 message Command {
 	optional LTFSDmReqNumber reqnum = 1;
 	optional LTFSDmReqNumberResp reqnumresp = 2;
@@ -278,4 +291,6 @@ message Command {
 	optional LTFSDmRetrieveResp retrieveresp = 33;
 	optional LTFSDmTransRecRequest transrecrequest = 34;
 	optional LTFSDmTransRecResp transrecresp = 35;
+	optional LTFSDmInfoFilesRequest infofilesrequest = 36;
+	optional LTFSDmInfoFilesResp infofilesresp = 37;
 }

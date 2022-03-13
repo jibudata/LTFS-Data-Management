@@ -88,14 +88,9 @@ void InfoFilesCommand::talkToBackend(std::stringstream *parmList)
 void InfoFilesCommand::doCommand(int argc, char **argv)
 {
     std::stringstream parmList;
-    Connector connector(false);
-    struct stat statbuf;
-    char migstate;
     std::istream *input;
     std::string line;
     char *file_name;
-    std::stringstream tapeIds;
-    FsObj::mig_target_attr_t attr;
 
     if (argc == 1) {
         INFO(LTFSDMC0018E);
@@ -125,56 +120,60 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
         input = dynamic_cast<std::istream*>(&parmList);
     }
 
+    try {
+        connect();
+    } catch (const std::exception& e) {
+        MSG(LTFSDMC0026E);
+        return;
+    }
+
     INFO(LTFSDMC0047I);
 
     while (std::getline(*input, line)) {
-        try {
-            file_name = canonicalize_file_name(line.c_str());
-            if (file_name == NULL) {
-                continue;
-            }
-            FsObj fso(file_name);
-            statbuf = fso.stat();
-            attr = fso.getAttribute();
-            tapeIds.str("");
-            tapeIds.clear();
-            if (attr.copies == 0) {
-                tapeIds << "-";
-            } else {
-                for (int i = 0; i < attr.copies; i++) {
-                    if (i != 0)
-                        tapeIds << ",";
-                    tapeIds << attr.tapeInfo[i].tapeId;
-                }
-            }
-            if (!S_ISREG(statbuf.st_mode)) {
-                INFO(LTFSDMC0049I, '-', statbuf.st_size, statbuf.st_blocks,
-                        tapeIds.str(), file_name);
-            } else {
-                switch (fso.getMigState()) {
-                    case FsObj::MIGRATED:
-                        migstate = 'm';
-                        break;
-                    case FsObj::PREMIGRATED:
-                        migstate = 'p';
-                        break;
-                    case FsObj::RESIDENT:
-                        migstate = 'r';
-                        break;
-                    default:
-                        migstate = ' ';
-                }
-                INFO(LTFSDMC0049I, migstate, statbuf.st_size, statbuf.st_blocks,
-                        tapeIds.str(), file_name);
-            }
-        } catch (const std::exception& e) {
-            if (stat(file_name, &statbuf) == -1) {
-                free(file_name);
-                continue;
-            }
-            INFO(LTFSDMC0049I, '-', statbuf.st_size, statbuf.st_blocks, '-',
-                    file_name);
+        file_name = canonicalize_file_name(line.c_str());
+        if (file_name == NULL) {
+            continue;
         }
+        LTFSDmProtocol::LTFSDmInfoFilesRequest *infofiles =
+                commCommand.mutable_infofilesrequest();
+        infofiles->set_key(key);
+        infofiles->set_filename(file_name);
+
+        try {
+            commCommand.send();
+        } catch (const std::exception& e) {
+            MSG(LTFSDMC0027E);
+            THROW(Error::GENERAL_ERROR);
+        }
+
+        try {
+            commCommand.recv();
+        } catch (const std::exception& e) {
+            MSG(LTFSDMC0028E);
+            THROW(Error::GENERAL_ERROR);
+        }
+
+        const LTFSDmProtocol::LTFSDmInfoFilesResp infofilesresp =
+                commCommand.infofilesresp();
+        uint64_t filesize = infofilesresp.size();
+        uint64_t fileblock = infofilesresp.block();
+        std::string tapeid = infofilesresp.tapeid();
+        char migstate;
+        switch (infofilesresp.migstate()) {
+            case FsObj::MIGRATED:
+                migstate = 'm';
+                break;
+            case FsObj::PREMIGRATED:
+                migstate = 'p';
+                break;
+            case FsObj::RESIDENT:
+                migstate = 'r';
+                break;
+            default:
+                migstate = '-';
+        }
+        INFO(LTFSDMC0049I, migstate, filesize, fileblock, tapeid, file_name);
+
         free(file_name);
     }
 }
