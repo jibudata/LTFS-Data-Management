@@ -166,6 +166,37 @@ mig_state_attr_t getMigInfoAt(int fd)
     return miginfo;
 }
 
+fuid_t getxattrfuid(int fd) {
+    ssize_t size;
+    fuid_t fuidinfo;
+    memset(&fuidinfo, 0, sizeof(fuidinfo));
+
+    if ((size = fgetxattr(fd, Const::LTFSDM_EA_FILEINFO.c_str(),
+            (void *) &fuidinfo, sizeof(fuidinfo))) == -1) {
+        /* TODO - check for errno */
+        return fuidinfo;
+    }
+
+    if (size != sizeof(fuidinfo)) {
+        errno = EIO;
+        THROW(Error::ATTR_FORMAT, size, sizeof(fuidinfo), fd);
+    }
+
+    return fuidinfo; 
+}
+
+/*
+void FsObj::setfuid(int fd, unsigned long fuid_h, unsigned long fuid_l, unsigned int igen, unsigned long inum)
+{
+    fuid_t fuidinfo = {fuid_h, fuid_l, igen, inum};
+
+    if (fsetxattr(fd, Const::LTFSDM_EA_FILEINFO.c_str(), (void *) &fuidinfo,
+            sizeof(fuidinfo), 0) == -1) {
+        THROW(Error::GENERAL_ERROR, errno, fd);
+    }
+}
+*/
+
 // FsObj member functions
 FsObj::FsObj(std::string fileName)
 {
@@ -209,6 +240,20 @@ FsObj::FsObj(std::string fileName)
 
     handle = (void *) fh;
     handleLength = fileName.size();
+}
+
+FsObj::FsObj(std::string fileName, fuid_t fuid, mig_target_attr_t attr) {
+    // create file
+    int fd = open(fileName.c_str(),
+    O_RDWR | O_CREAT | O_APPEND | O_CLOEXEC | O_SYNC, 0644);
+
+    if (fd == Const::UNSET) {
+        MSG(LTFSDMX0001E, errno);
+        THROW(Error::GENERAL_ERROR, errno);
+    }
+    // set uid information
+    // set extended attributes
+
 }
 
 FsObj::FsObj(Connector::rec_info_t recinfo) :
@@ -325,7 +370,10 @@ struct stat FsObj::stat()
 fuid_t FsObj::getfuid()
 {
     FileHandle *fh = (FileHandle *) handle;
-    fuid_t fuid;
+    fuid_t fuid = getxattrfuid(fh->fd);
+    if (fuid.igen != 0) {
+        return fuid;
+    }
     struct stat statbuf;
 
     fuid.fsid_h = fh->fsid_h;

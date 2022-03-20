@@ -120,20 +120,19 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
         input = dynamic_cast<std::istream*>(&parmList);
     }
 
-    try {
-        connect();
-    } catch (const std::exception& e) {
-        MSG(LTFSDMC0026E);
-        return;
-    }
-
-    INFO(LTFSDMC0047I);
-
     while (std::getline(*input, line)) {
         file_name = canonicalize_file_name(line.c_str());
         if (file_name == NULL) {
             continue;
         }
+
+        try {
+            connect();
+        } catch (const std::exception& e) {
+            MSG(LTFSDMC0026E);
+            return;
+        }
+
         LTFSDmProtocol::LTFSDmInfoFilesRequest *infofiles =
                 commCommand.mutable_infofilesrequest();
         infofiles->set_key(key);
@@ -157,7 +156,9 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
                 commCommand.infofilesresp();
         uint64_t filesize = infofilesresp.size();
         uint64_t fileblock = infofilesresp.block();
-        std::string tapeid = infofilesresp.tapeid();
+        std::string tapeid = infofilesresp.tapeinfo(0).tapeid();
+        uint64_t startblock = infofilesresp.tapeinfo(0).startblock();
+        LTFSDmProtocol::LTFSDmFileInfo fileinfo = infofilesresp.fileinfo();
         char migstate;
         switch (infofilesresp.migstate()) {
             case FsObj::MIGRATED:
@@ -172,7 +173,10 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
             default:
                 migstate = '-';
         }
-        INFO(LTFSDMC0049I, migstate, filesize, fileblock, tapeid, file_name);
+        INFO(LTFSDMC0047I);
+        INFO(LTFSDMC0049I, migstate, filesize, fileblock, tapeid, startblock, file_name);
+        //INFO(LTFSDMC0108I);
+        //INFO(LTFSDLTFSDMC0109I, fileinfo.fsidh(), fileinfo.fsidl(), fileinfo.igen(), fileinfo.inum(), file_name);
 
         free(file_name);
     }

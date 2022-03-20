@@ -329,12 +329,15 @@ public:
     {
     }
     FsObj(std::string fileName);
+    // Create New file with expected extended attributes
+    FsObj(std::string fileName, fuid_t fuid, mig_target_attr_t attr);
     FsObj(Connector::rec_info_t recinfo);
     ~FsObj();
     bool isFsManaged();
     void manageFs(bool setDispo, struct timespec starttime);
     struct stat stat();
     fuid_t getfuid();
+    void setfuid(int fd, unsigned long fuid_h, unsigned long fuid_l, unsigned int igen, unsigned long inum);
     std::string getTapeId();
     void lock();
     bool try_lock();

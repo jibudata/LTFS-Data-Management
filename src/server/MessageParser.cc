@@ -609,9 +609,10 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
     uint64_t filesize = 0;
     uint64_t fileblock = 0;
     std::string tapeid = "";
+    fuid_t fuid;
     struct stat statbuf;
     FsObj::mig_target_attr_t attr;
-    std::stringstream tapeIds;
+    LTFSDmProtocol::LTFSDmInfoFilesResp *infofilesresp = command->mutable_infofilesresp();
 
     TRACE(Trace::normal, keySent);
 
@@ -624,20 +625,23 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
         FsObj fso(file_name);
         statbuf = fso.stat();
         attr = fso.getAttribute();
-        tapeIds.str("");
-        tapeIds.clear();
         if (attr.copies == 0) {
-            tapeIds << "-";
+            LTFSDmProtocol::LTFSDmTapeInfo* tapeinfo = infofilesresp->add_tapeinfo();
+            tapeinfo->set_tapeid("-");
+            tapeinfo->set_startblock(0);
         } else {
             for (int i = 0; i < attr.copies; i++) {
-                if (i != 0)
-                    tapeIds << ",";
-                tapeIds << attr.tapeInfo[i].tapeId;
+                if (i >= Const::maxReplica) {
+                    break;
+                }
+                LTFSDmProtocol::LTFSDmTapeInfo* tapeinfo = infofilesresp->add_tapeinfo();
+                tapeinfo->set_tapeid(attr.tapeInfo[i].tapeId);
+                tapeinfo->set_startblock(attr.tapeInfo[i].startBlock);
             }
         }
+        fuid = fso.getfuid();
         filesize = statbuf.st_size;
         fileblock = statbuf.st_blocks;
-        tapeid = tapeIds.str();
         if (!S_ISREG(statbuf.st_mode)) {
             TRACE(Trace::error, file_name, "not a regular file");
         } else {
@@ -652,12 +656,15 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
         TRACE(Trace::error, e.what());
     }
 
-    LTFSDmProtocol::LTFSDmInfoFilesResp *infofilesresp = command->mutable_infofilesresp();
+    LTFSDmProtocol::LTFSDmFileInfo *fileinfo = infofilesresp->mutable_fileinfo();
+    fileinfo->set_fsidh(fuid.fsid_h);
+    fileinfo->set_fsidl(fuid.fsid_l);
+    fileinfo->set_igen(fuid.igen);
+    fileinfo->set_inum(fuid.inum);
 
     infofilesresp->set_migstate(migstate);
     infofilesresp->set_size(filesize);
     infofilesresp->set_block(fileblock);
-    infofilesresp->set_tapeid(tapeid);
     infofilesresp->set_filename(file_name);
 
     try {

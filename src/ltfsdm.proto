@@ -247,12 +247,25 @@ message LTFSDmInfoFilesRequest {
 	bytes filename = 2;
 }
 
+message LTFSDmTapeInfo {
+    bytes tapeid = 1;
+    uint64 startblock = 2;
+}
+
+message LTFSDmFileInfo {
+	uint64 fsidh = 1;
+    uint64 fsidl = 2;
+    uint64 igen = 3;
+    uint64 inum = 4;
+}
+
 message LTFSDmInfoFilesResp {
 	int64 migstate = 1;
-	uint64 size = 2;
-	uint64 block = 3;
-	bytes tapeid = 4;
-	bytes filename = 5; 
+	bytes filename = 2; 
+	uint64 size = 3;
+	uint64 block = 4;
+	LTFSDmFileInfo fileinfo = 5;
+	repeated LTFSDmTapeInfo tapeinfo = 6;
 }
 
 message Command {

@@ -65,6 +65,7 @@ const std::string LTFSDM_EA = ".ltfsdm.";
 const std::string LTFSDM_EA_MIGSTATE = "trusted.ltfsdm.migstate";
 const std::string LTFSDM_EA_MIGINFO = "trusted.ltfsdm.miginfo";
 const std::string LTFSDM_EA_FSINFO = "trusted.ltfsdm.fsinfo";
+const std::string LTFSDM_EA_FILEINFO = "trusted.ltfsdm.fileinfo";
 const std::string LTFSDM_CACHE_DIR = "/.cache";
 const std::string LTFSDM_CACHE_MP = LTFSDM_CACHE_DIR + "/...";
 const std::string LTFSDM_IOCTL = LTFSDM_CACHE_DIR + "/ioctl";
