@@ -185,18 +185,6 @@ fuid_t getxattrfuid(int fd) {
     return fuidinfo; 
 }
 
-/*
-void FsObj::setfuid(int fd, unsigned long fuid_h, unsigned long fuid_l, unsigned int igen, unsigned long inum)
-{
-    fuid_t fuidinfo = {fuid_h, fuid_l, igen, inum};
-
-    if (fsetxattr(fd, Const::LTFSDM_EA_FILEINFO.c_str(), (void *) &fuidinfo,
-            sizeof(fuidinfo), 0) == -1) {
-        THROW(Error::GENERAL_ERROR, errno, fd);
-    }
-}
-*/
-
 // FsObj member functions
 FsObj::FsObj(std::string fileName)
 {
@@ -242,18 +230,31 @@ FsObj::FsObj(std::string fileName)
     handleLength = fileName.size();
 }
 
-FsObj::FsObj(std::string fileName, fuid_t fuid, mig_target_attr_t attr) {
-    // create file
-    int fd = open(fileName.c_str(),
-    O_RDWR | O_CREAT | O_APPEND | O_CLOEXEC | O_SYNC, 0644);
-
-    if (fd == Const::UNSET) {
-        MSG(LTFSDMX0001E, errno);
-        THROW(Error::GENERAL_ERROR, errno);
+void FsObj::setAttributes(fuid_t fuid, mig_target_attr_t attr, int64_t state, uint64_t filesize) {
+    FileHandle *fh = (FileHandle *) handle;
+    mig_state_attr_t stat = genMigInfoAt(fh->fd, (mig_state_attr_t::state_num) state);
+    stat.size = filesize;
+    if (fsetxattr(fh->fd, Const::LTFSDM_EA_MIGINFO.c_str(), (void *) &attr,
+        sizeof(attr), 0) == -1) {
+        THROW(Error::GENERAL_ERROR, errno, fh->fd);
+    } 
+    if (fsetxattr(fh->fd, Const::LTFSDM_EA_MIGSTATE.c_str(), (void *) &stat,
+        sizeof(stat), 0) == -1) {
+        THROW(Error::GENERAL_ERROR, errno, fh->fd);
     }
-    // set uid information
-    // set extended attributes
+    if (fsetxattr(fh->fd, Const::LTFSDM_EA_FILEINFO.c_str(), (void *) &fuid,
+        sizeof(fuid), 0) == -1) {
+        THROW(Error::GENERAL_ERROR, errno, fh->fd);
+    } 
+}
 
+void FsObj::truncate() {
+    FileHandle *fh = (FileHandle *) handle;
+    if (ftruncate(fh->fd, 0) == -1) {
+        TRACE(Trace::error, errno);
+        MSG(LTFSDMF0016E, fh->filepath);
+        THROW(Error::GENERAL_ERROR, errno, fh->filepath);
+    }
 }
 
 FsObj::FsObj(Connector::rec_info_t recinfo) :
@@ -477,6 +478,13 @@ void FsObj::remAttribute()
         if ( errno != ENODATA)
             THROW(Error::GENERAL_ERROR, errno, fh->filepath);
     }
+
+    if (fremovexattr(fh->fd, Const::LTFSDM_EA_FILEINFO.c_str()) == -1) {
+        TRACE(Trace::error, errno);
+        MSG(LTFSDMF0018W, Const::LTFSDM_EA_FILEINFO);
+        if ( errno != ENODATA)
+            THROW(Error::GENERAL_ERROR, errno, fh->filepath);
+    }
 }
 
 FsObj::mig_target_attr_t FsObj::getAttribute()
@@ -580,10 +588,9 @@ void FsObj::stub()
     setMigInfoAt(fh->fd, mig_state_attr_t::state_num::MIGRATED);
 }
 
-FsObj::file_state FsObj::getMigState()
+int64_t FsObj::getRawMigState()
 {
     FileHandle *fh = (FileHandle *) handle;
-    FsObj::file_state state = FsObj::RESIDENT;
     mig_state_attr_t miginfo;
 
     try {
@@ -594,8 +601,12 @@ FsObj::file_state FsObj::getMigState()
         }
         THROW(Error::GENERAL_ERROR, fh->filepath);
     }
+    return miginfo.state;
+}
 
-    switch (miginfo.state) {
+FsObj::file_state FsObj::attrToMigState(int64_t rawstate) {
+    FsObj::file_state state = FsObj::RESIDENT;
+    switch (rawstate) {
         case mig_state_attr_t::state_num::RESIDENT:
         case mig_state_attr_t::state_num::IN_MIGRATION:
             state = FsObj::RESIDENT;
@@ -608,7 +619,12 @@ FsObj::file_state FsObj::getMigState()
         case mig_state_attr_t::state_num::STUBBING:
             state = FsObj::PREMIGRATED;
     }
-
     return state;
+}
+
+FsObj::file_state FsObj::getMigState()
+{
+    int64_t rawstate = getRawMigState();
+    return FsObj::attrToMigState(rawstate);
 }
 

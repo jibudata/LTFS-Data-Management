@@ -252,10 +252,10 @@ message LTFSDmTapeInfo {
     uint64 startblock = 2;
 }
 
-message LTFSDmFileInfo {
+message LTFSDmFuidInfo {
 	uint64 fsidh = 1;
     uint64 fsidl = 2;
-    uint64 igen = 3;
+    uint32 igen = 3;
     uint64 inum = 4;
 }
 
@@ -264,8 +264,19 @@ message LTFSDmInfoFilesResp {
 	bytes filename = 2; 
 	uint64 size = 3;
 	uint64 block = 4;
-	LTFSDmFileInfo fileinfo = 5;
+	LTFSDmFuidInfo fuidinfo = 5;
 	repeated LTFSDmTapeInfo tapeinfo = 6;
+}
+
+message LTFSDmRecoverRequest {
+	uint64 key = 1;
+	int64 reqNumber = 2;
+	repeated LTFSDmInfoFilesResp fileinfo = 3;
+}
+
+message LTFSDmRecoverResp {
+	bool success = 1;
+	repeated bytes filenames = 2;
 }
 
 message Command {
@@ -306,4 +317,6 @@ message Command {
 	optional LTFSDmTransRecResp transrecresp = 35;
 	optional LTFSDmInfoFilesRequest infofilesrequest = 36;
 	optional LTFSDmInfoFilesResp infofilesresp = 37;
+	optional LTFSDmRecoverRequest recoverrequest = 38;
+	optional LTFSDmRecoverResp recoverresp = 39;
 }

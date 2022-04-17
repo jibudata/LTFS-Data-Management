@@ -49,6 +49,7 @@
 #include "PoolRemoveCommand.h"
 #include "InfoPoolsCommand.h"
 #include "RetrieveCommand.h"
+#include "RecoverCommand.h"
 #include "HelpCommand.h"
 
 /** @page ltfsdm_help ltfsdm help
@@ -129,6 +130,8 @@ void HelpCommand::doCommand(int argc, char **argv)
         ltfsdmCommand = new RetrieveCommand();
     } else if (HelpCommand().compare(command)) {
         ltfsdmCommand = new HelpCommand();
+    } else if (RecoverCommand().compare(command)) {
+        ltfsdmCommand = new RecoverCommand();
     } else if (InfoCommand().compare(command)) {
         if (argc < 3) {
             ltfsdmCommand = new InfoCommand();

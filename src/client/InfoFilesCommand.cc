@@ -158,9 +158,10 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
         uint64_t fileblock = infofilesresp.block();
         std::string tapeid = infofilesresp.tapeinfo(0).tapeid();
         uint64_t startblock = infofilesresp.tapeinfo(0).startblock();
-        LTFSDmProtocol::LTFSDmFileInfo fileinfo = infofilesresp.fileinfo();
+        LTFSDmProtocol::LTFSDmFuidInfo fileinfo = infofilesresp.fuidinfo();
         char migstate;
-        switch (infofilesresp.migstate()) {
+        FsObj::file_state state = FsObj::attrToMigState(infofilesresp.migstate());
+        switch (state) {
             case FsObj::MIGRATED:
                 migstate = 'm';
                 break;
@@ -175,8 +176,8 @@ void InfoFilesCommand::doCommand(int argc, char **argv)
         }
         INFO(LTFSDMC0047I);
         INFO(LTFSDMC0049I, migstate, filesize, fileblock, tapeid, startblock, file_name);
-        //INFO(LTFSDMC0108I);
-        //INFO(LTFSDLTFSDMC0109I, fileinfo.fsidh(), fileinfo.fsidl(), fileinfo.igen(), fileinfo.inum(), file_name);
+        INFO(LTFSDMC0108I);
+        INFO(LTFSDMC0109I, fileinfo.fsidh(), fileinfo.fsidl(), fileinfo.igen(), fileinfo.inum(), file_name);
 
         free(file_name);
     }

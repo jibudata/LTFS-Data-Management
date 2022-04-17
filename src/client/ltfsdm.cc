@@ -58,6 +58,7 @@
 #include "PoolRemoveCommand.h"
 #include "InfoPoolsCommand.h"
 #include "RetrieveCommand.h"
+#include "RecoverCommand.h"
 #include "VersionCommand.h"
 
 
@@ -220,6 +221,8 @@ int main(int argc, char *argv[])
         ltfsdmCommand = std::unique_ptr<LTFSDMCommand>(new RetrieveCommand);
     } else if (VersionCommand().compare(command)) {
         ltfsdmCommand = std::unique_ptr<LTFSDMCommand>(new VersionCommand);
+    } else if (RecoverCommand().compare(command)) {
+        ltfsdmCommand = std::unique_ptr<LTFSDMCommand>(new RecoverCommand);
     } else if (InfoCommand().compare(command)) {
         if (argc < 3) {
             MSG(LTFSDMC0011E);

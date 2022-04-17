@@ -56,6 +56,7 @@ private:
     static void infoPoolsMessage(long key, LTFSDmCommServer *command);
     static void retrieveMessage(long key, LTFSDmCommServer *command);
     static void infoFilesMessage(long key, LTFSDmCommServer *command);
+    static void recoverfileMessage(long key, LTFSDmCommServer *command);
 
 public:
     MessageParser()

@@ -15,6 +15,9 @@
  *
  *******************************************************************************/
 #include "ServerIncludes.h"
+#include <boost/filesystem.hpp>
+#include "src/connector/file/FileHandle.h"
+#include "src/connector/Connector.h"
 
 /**
     @page message_parsing Message parsing
@@ -645,7 +648,7 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
         if (!S_ISREG(statbuf.st_mode)) {
             TRACE(Trace::error, file_name, "not a regular file");
         } else {
-            migstate = fso.getMigState();
+            migstate = fso.getRawMigState();
         }
     } catch (const std::exception& e) {
         if (stat(file_name.c_str(), &statbuf) == -1) {
@@ -656,7 +659,7 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
         TRACE(Trace::error, e.what());
     }
 
-    LTFSDmProtocol::LTFSDmFileInfo *fileinfo = infofilesresp->mutable_fileinfo();
+    LTFSDmProtocol::LTFSDmFuidInfo *fileinfo = infofilesresp->mutable_fuidinfo();
     fileinfo->set_fsidh(fuid.fsid_h);
     fileinfo->set_fsidl(fuid.fsid_l);
     fileinfo->set_igen(fuid.igen);
@@ -671,6 +674,91 @@ void MessageParser::infoFilesMessage(long key, LTFSDmCommServer *command)
         command->send();
     } catch (const std::exception& e) {
         MSG(LTFSDMS0007E);
+    }
+}
+
+void MessageParser::recoverfileMessage(long key, LTFSDmCommServer *command)
+
+{
+    TRACE(Trace::always, __PRETTY_FUNCTION__);
+    const LTFSDmProtocol::LTFSDmRecoverRequest recoverreq =
+            command->recoverrequest();
+    LTFSDmProtocol::LTFSDmRecoverResp *recoverresp =
+                command->mutable_recoverresp();
+    long keySent = recoverreq.key();
+    int requestNumber = recoverreq.reqnumber();
+    std::string file_name;
+    uint64_t file_size;
+    LTFSDmProtocol::LTFSDmFuidInfo fuid_info;
+    LTFSDmProtocol::LTFSDmInfoFilesResp fileinfo;
+    LTFSDmProtocol::LTFSDmTapeInfo tapeinfo;
+
+    TRACE(Trace::normal, keySent);
+
+    if (key != keySent) {
+        MSG(LTFSDMS0008E, keySent);
+        return;
+    }
+
+    TRACE(Trace::normal, requestNumber);
+
+    for (int i = 0; i < recoverreq.fileinfo_size(); i++) {
+        fileinfo = recoverreq.fileinfo(i);
+        file_name = fileinfo.filename();
+        file_size = fileinfo.size();
+        fuid_info = fileinfo.fuidinfo();
+        TRACE(Trace::always, file_name, file_size);
+        TRACE(Trace::always, "fuid_info: ", fuid_info.fsidh(), fuid_info.fsidl(), fuid_info.igen(), fuid_info.inum());
+        TRACE(Trace::always, "migstate: ", fileinfo.migstate());
+        for (int j = 0; j < fileinfo.tapeinfo_size(); j++) {
+            tapeinfo = fileinfo.tapeinfo(j);
+            TRACE(Trace::always, tapeinfo.tapeid(), tapeinfo.startblock());
+        }
+
+        // TBD: check file existance
+        if (boost::filesystem::exists(file_name)) {
+            TRACE(Trace::always, "File already exists", file_name);
+            continue;
+        }
+
+        // create stub file
+        std::ofstream f(file_name);
+        f.close();
+
+        // set attributes
+        FsObj file(file_name);
+        file.truncate();
+        fuid_t fuid;
+        FsObj::mig_target_attr_t attr;
+        memset(&attr, 0, sizeof(attr));
+
+        attr.typeId = typeid(FsObj::mig_target_attr_t).hash_code();
+        attr.copies = fileinfo.tapeinfo_size();
+        if (attr.copies > 0 && attr.copies < Const::maxReplica) {
+            attr.added = true;
+            for (int j = 0; j < attr.copies; j++) {
+                std::string tapeId = fileinfo.tapeinfo(j).tapeid();
+                memset(attr.tapeInfo[j].tapeId, 0, Const::tapeIdLength + 1);
+                strncpy(attr.tapeInfo[j].tapeId, tapeId.c_str(),
+                        Const::tapeIdLength);
+                attr.tapeInfo[j].startBlock = fileinfo.tapeinfo(j).startblock();
+            }
+        } else {
+            attr.added = false;
+        }
+        fuid = {fuid_info.fsidh(), fuid_info.fsidl(), fuid_info.igen(), fuid_info.inum()}; // set LTFSDM_EA_FILEINFO
+        file.setAttributes(fuid, attr, fileinfo.migstate(), file_size);
+        recoverresp->add_filenames(file_name);
+    }
+
+    // send return message
+    recoverresp->set_success(true);
+    try {
+        command->send();
+    } catch (const std::exception& e) {
+        TRACE(Trace::error, e.what());
+        MSG(LTFSDMS0007E);
+        return;
     }
 }
 
@@ -1416,6 +1504,8 @@ void MessageParser::run(long key, LTFSDmCommServer command,
                     retrieveMessage(key, &command);
                 } else if (command.has_infofilesrequest()) {
                     infoFilesMessage(key, &command);
+                } else if (command.has_recoverrequest()) {
+                    recoverfileMessage(key, &command);
                 } else {
                     TRACE(Trace::error, "unkown command\n");
                 }
